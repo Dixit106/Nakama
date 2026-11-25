@@ -3,6 +3,7 @@ from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QLineEdi
 from PyQt6.QtGui import QPixmap 
 from PyQt6.QtCore import Qt, QPoint, QTimer, QThread, pyqtSignal
 from brain import ask_brain 
+from voice import speak
 
 class BrainWorker(QThread):
     reply_ready = pyqtSignal(str)
@@ -14,6 +15,14 @@ class BrainWorker(QThread):
     def run(self):
         reply = ask_brain(self.prompt)
         self.reply_ready.emit(reply)
+
+class VoiceWorker(QThread):
+    def __init__(self, text):
+        super().__init__()
+        self.text = text 
+
+    def run(self):
+        speak(self.text)
 
 class NakamaWindow(QWidget):
     def __init__(self):
@@ -119,7 +128,9 @@ class NakamaWindow(QWidget):
             self.worker.start()
 
     def on_brain_reply(self, reply):
-        self.say(reply, duration=7000)
+        self.say(reply, duration=8000)
+        self.voice_worker = VoiceWorker(reply)
+        self.voice_worker.start()
 
     def load_frames(self, paths):
         loaded = []
