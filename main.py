@@ -39,9 +39,11 @@ class NakamaWindow(QWidget):
         self.speech_bubble.hide()
 
         #box to see and drag the window
-        self.sprite_label = QLabel("Nakama", self)
-        self.sprite_label.setGeometry(0,0,200,200)
+        self.sprite_label = QLabel(self)
         self.sprite_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        layout.addWidget(self.speech_bubble)
+        layout.addWidget(self.sprite_label)
 
         #loading and scaleing pixel-art i made
         self.frames = self.load_frames([
@@ -55,6 +57,19 @@ class NakamaWindow(QWidget):
         self.anim_timer = QTimer(self)
         self.anim_timer.timeout.connect(self.next_frame)
         self.anim_timer.start(600)
+
+        #Auto hide timer for speech bubble
+        self.bubble_timer = QTimer(self)
+        self.bubble_timer.setSingleShot(True)
+        self.bubble_timer.timeout.connect(self.speech_bubble.hide)
+
+        #Test greeting when start
+        self.say("Yo! What's Up!")
+
+    def say(self, text, duration=4000):
+        self.speech_bubble.setText(text)
+        self.speech_bubble.show()
+        self.bubble_timer.start(duration)
 
     def load_frames(self, paths):
         loaded = []
@@ -74,6 +89,10 @@ class NakamaWindow(QWidget):
     def next_frame(self):
         self.current_frame = (self.current_frame + 1) % len(self.frames)
         self.sprite_label.setPixmap(self.frames[self.current_frame])
+
+    def mouseDoubleClickEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.say("Hey! Don't poke me, I will get angery now...")
 
     def mousePressEvent(self, event):
         #to record where we click inside the window
