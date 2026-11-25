@@ -1,6 +1,7 @@
 import sys 
 from PyQt6.QtWidgets import QApplication, QWidget, QLabel 
-from PyQt6.QtCore import Qt, QPoint
+from PyQt6.QtGui import QPixmap 
+from PyQt6.QtCore import Qt, QPoint, QTimer
 
 class NakamaWindow(QWidget):
     def __init__(self):
@@ -16,16 +17,41 @@ class NakamaWindow(QWidget):
         self.resize(200,200)
 
         #box to see and drag the window
-        self.placeholder = QLabel("Nakama", self)
-        self.placeholder.setGeometry(0,0,200,200)
-        self.placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.placeholder.setStyleSheet("""
-            background-color: rgba(88, 101, 242, 220);
-            color: white;
-            font-size: 20px;
-            font-weight: bold;
-            border-radius: 24px;
-""")
+        self.sprite_label = QLabel("Nakama", self)
+        self.sprite_label.setGeometry(0,0,200,200)
+        self.sprite_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        #loading and scaleing pixel-art i made
+        self.frames = self.load_frames([
+            "assets/pixel_girl_02.png",
+            "assets/pixel_girl_01.png"
+        ])
+        self.current_frame = 0
+        self.sprite_label.setPixmap(self.frames[self.current_frame])
+
+        #loop for change 
+        self.anim_timer = QTimer(self)
+        self.anim_timer.timeout.connect(self.next_frame)
+        self.anim_timer.start(600)
+
+    def load_frames(self, paths):
+        loaded = []
+        for path in paths:
+            pixmap = QPixmap(path)
+            if pixmap.isNull():
+                print(f"Warning: Could not load {path}")
+            else:
+                pixmap = pixmap.scaled(
+                    200, 200,
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.FastTransformation
+                )
+            loaded.append(pixmap)
+        return loaded
+
+    def next_frame(self):
+        self.current_frame = (self.current_frame + 1) % len(self.frames)
+        self.sprite_label.setPixmap(self.frames[self.current_frame])
 
     def mousePressEvent(self, event):
         #to record where we click inside the window
