@@ -1,7 +1,19 @@
 import sys 
 from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QLineEdit
 from PyQt6.QtGui import QPixmap 
-from PyQt6.QtCore import Qt, QPoint, QTimer
+from PyQt6.QtCore import Qt, QPoint, QTimer, QThread, pyqtSignal
+from brain import ask_brain 
+
+class BrainWorker(QThread):
+    reply_ready = pyqtSignal(str)
+
+    def __init__(self, prompt):
+        super().__init__()
+        self.prompt = prompt 
+
+    def run(self):
+        reply = ask_brain(self.prompt)
+        self.reply_ready.emit(reply)
 
 class NakamaWindow(QWidget):
     def __init__(self):
@@ -101,7 +113,13 @@ class NakamaWindow(QWidget):
         self.input_box.clear()
         self.input_box.hide()
         if text:
-            self.say(f"You said: {text}")
+            self.say(f"Thinking...", duration=90000)
+            self.worker = BrainWorker(text)
+            self.worker.reply_ready.connect(self.on_brain_reply)
+            self.worker.start()
+
+    def on_brain_reply(self, reply):
+        self.say(reply, duration=7000)
 
     def load_frames(self, paths):
         loaded = []
