@@ -1,5 +1,5 @@
 import sys 
-from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout
+from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QLineEdit
 from PyQt6.QtGui import QPixmap 
 from PyQt6.QtCore import Qt, QPoint, QTimer
 
@@ -14,7 +14,7 @@ class NakamaWindow(QWidget):
             Qt.WindowType.WindowStaysOnTopHint
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.resize(240,290)
+        self.resize(240,355)
 
         #speech bubble above the sprite
         layout = QVBoxLayout(self)
@@ -42,8 +42,26 @@ class NakamaWindow(QWidget):
         self.sprite_label = QLabel(self)
         self.sprite_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
+        #hidden chatbox (toggls on right click)
+        self.input_box = QLineEdit(self)
+        self.input_box.setPlaceholderText("Talk to Magari")
+        self.input_box.setStyleSheet("""
+            background-color: rgba(30, 30, 46, 240);
+            color: #cdd6f4;
+            border: 2px solid #89b4fa;
+            border-radius: 10px;
+            padding: 6px 10px;
+            font-size: 12px;
+        """)
+        input_policy = self.input_box.sizePolicy()
+        input_policy.setRetainSizeWhenHidden(True)
+        self.input_box.setSizePolicy(input_policy)
+        self.input_box.hide()
+        self.input_box.returnPressed.connect(self.handle_input)
+
         layout.addWidget(self.speech_bubble)
         layout.addWidget(self.sprite_label)
+        layout.addWidget(self.input_box)
 
         #loading and scaleing pixel-art i made
         self.frames = self.load_frames([
@@ -70,6 +88,20 @@ class NakamaWindow(QWidget):
         self.speech_bubble.setText(text)
         self.speech_bubble.show()
         self.bubble_timer.start(duration)
+
+    def toggle_input(self):
+        if self.input_box.isVisible():
+            self.input_box.hide()
+        else:
+            self.input_box.show()
+            self.input_box.setFocus()
+
+    def handle_input(self):
+        text = self.input_box.text().strip()
+        self.input_box.clear()
+        self.input_box.hide()
+        if text:
+            self.say(f"You said: {text}")
 
     def load_frames(self, paths):
         loaded = []
@@ -99,6 +131,9 @@ class NakamaWindow(QWidget):
         if event.buttons() == Qt.MouseButton.LeftButton:
             self.drag_position = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
             event.accept()
+        elif event.button() == Qt.MouseButton.RightButton:
+            self.toggle_input()
+            event.accept()
 
     def mouseMoveEvent(self, event):
         #smooth movement of window with drag
@@ -109,7 +144,10 @@ class NakamaWindow(QWidget):
     def keyPressEvent(self, event):
         #Esc key to close as there is no title bar or other buttons
         if event.key() == Qt.Key.Key_Escape:
-            self.close()
+            if self.input_box.isVisible():
+                self.input_box.hide()
+            else:
+                self.close()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
