@@ -1,5 +1,5 @@
 import sys 
-from PyQt6.QtWidgets import QApplication, QWidget, QLabel 
+from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout
 from PyQt6.QtGui import QPixmap 
 from PyQt6.QtCore import Qt, QPoint, QTimer
 
@@ -14,7 +14,29 @@ class NakamaWindow(QWidget):
             Qt.WindowType.WindowStaysOnTopHint
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.resize(200,200)
+        self.resize(240,290)
+
+        #speech bubble above the sprite
+        layout = QVBoxLayout(self)
+
+        #speech bubble
+        self.speech_bubble = QLabel("", self)
+        self.speech_bubble.setWordWrap(True)
+        self.speech_bubble.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.speech_bubble.setStyleSheet("""
+            background-color: rgba(30,30,46,235);
+            color: #cdd6f4;
+            border: 2px solid #89b4fa;
+            border-radius: 12px;
+            padding: 8px 12px;
+            font-size: 13px;
+            font-weight: bold;
+""")
+        #to keep space reserved when hidden so the sprite doesn't jump
+        policy = self.speech_bubble.sizePolicy()
+        policy.setRetainSizeWhenHidden(True)
+        self.speech_bubble.setSizePolicy(policy)
+        self.speech_bubble.hide()
 
         #box to see and drag the window
         self.sprite_label = QLabel("Nakama", self)
