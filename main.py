@@ -17,12 +17,19 @@ class BrainWorker(QThread):
         self.reply_ready.emit(reply)
 
 class VoiceWorker(QThread):
+    started_speaking = pyqtSignal()
+    mouth_changed = pyqtSignal(int)
+
     def __init__(self, text):
         super().__init__()
         self.text = text 
 
     def run(self):
-        speak(self.text)
+        speak(
+            self.text,
+            on_start=self.started_speaking.emit,
+            on_mouth=self.mouth_changed.emit
+            )
 
 class NakamaWindow(QWidget):
     def __init__(self):
@@ -86,9 +93,14 @@ class NakamaWindow(QWidget):
 
         #loading and scaleing pixel-art i made
         self.frames = self.load_frames([
-            "assets/pixel_girl_02.png",
-            "assets/pixel_girl_01.png"
+            "assets/Magari.png"
         ])
+        self.talk_frames = self.load_frames([
+                "assets/Magari.png", #closed mouth
+                "assets/talk_01.png", #halfopen mouth
+                "assets/talk_02.png" #fullopen
+        ])
+        self.is_speaking = False
         self.current_frame = 0
         self.sprite_label.setPixmap(self.frames[self.current_frame])
 
@@ -128,9 +140,23 @@ class NakamaWindow(QWidget):
             self.worker.start()
 
     def on_brain_reply(self, reply):
-        self.say(reply, duration=8000)
-        self.voice_worker = VoiceWorker(reply)
-        self.voice_worker.start()
+       self.voice_worker = VoiceWorker(reply)
+       self.voice_worker.started_speaking.connect(lambda: self.start_speaking(reply))
+       self.voice_worker.mouth_changed.connect(self.set_mouth_frame)
+       self.voice_worker.finished.connect(self.stop_speaking)
+       self.voice_worker.start()
+
+    def start_speaking(self, reply):
+        self.is_speaking = True 
+        self.say(reply, duration=9000)
+
+    def set_mouth_frame(self, state):
+        if self.is_speaking:
+            self.sprite_label.setPixmap(self.talk_frames[state])
+
+    def stop_speaking(self):
+        self.is_speaking = False 
+        self.sprite_label.setPixmap(self.frames[0])
 
     def load_frames(self, paths):
         loaded = []
@@ -148,8 +174,9 @@ class NakamaWindow(QWidget):
         return loaded
 
     def next_frame(self):
-        self.current_frame = (self.current_frame + 1) % len(self.frames)
-        self.sprite_label.setPixmap(self.frames[self.current_frame])
+        if not self.is_speaking:
+            self.current_frame = (self.current_frame + 1) % len(self.frames)
+            self.sprite_label.setPixmap(self.frames[self.current_frame])
 
     def mouseDoubleClickEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
